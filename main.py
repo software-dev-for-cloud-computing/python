@@ -1,144 +1,88 @@
-from typing import List, Tuple, Optional
+import asyncio
+import logging
+import os
+import uuid
 
-from fastapi import FastAPI, BackgroundTasks, UploadFile, File, Body, Depends, Form
-from fastapi.exceptions import RequestValidationError, HTTPException
-from langchain_core.documents import Document
-from starlette.responses import JSONResponse
+from dotenv import load_dotenv
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Header
+from fastapi.responses import JSONResponse
 
-from core.config import QDRANT_HOST, QDRANT_COLLECTION_NAME
-from services.manager import upload_process, search_process, retrieve_process
-from services.vectore_store.document_service import DocumentService
-from services.vectore_store.vector_store_service import VectorStoreService
-from utils.serializer_helper import search_results_to_dict
-from services.vectore_store.collection_service import CollectionService
+from app.business_logic.upload_process import UploadProcess
+from app.models.dto.documents import UploadDocumentRequestBody
+from app.services.pdf_reader_service import PDFReaderService
+from app.services.text_splitter_service import TextSplitterService
+from app.services.embedding_service import OpenAIEmbeddingModel
+from app.services.vector_store_service import QdrantVectorStore
+from app.interfaces.pdf_reader import PDFReader
+from app.interfaces.text_splitter import TextSplitter
+from app.interfaces.embedding_model import EmbeddingModel
+from app.interfaces.vector_store import VectorStore
+from app.utils.logger import Logger
+from app.utils.logger import request_id_var
 
 app = FastAPI()
 
+load_dotenv()
 
-@app.get("/collections")
-async def get_collections():
+logger = Logger(name="Logger")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
+VECTOR_STORE_DIMENSION = os.getenv("EMBEDDING_DIMENSIONS")
+
+
+# Dependency injection
+def get_pdf_reader() -> PDFReader:
+    return PDFReaderService()
+
+
+def get_text_splitter() -> TextSplitter:
+    return TextSplitterService(chunk_size=500)
+
+
+def get_embedding_model(api_key: str = Header(..., alias="X-Api-Key")) -> EmbeddingModel:
+    return OpenAIEmbeddingModel(
+        api_key=api_key,
+        model_name=EMBEDDING_MODEL,
+        dimensions=VECTOR_STORE_DIMENSION
+    )
+
+
+def get_vector_store(embedding_model: EmbeddingModel = Depends(get_embedding_model)) -> VectorStore:
+    return QdrantVectorStore(embedding_model=embedding_model)
+
+
+@app.post("/document", response_model=None)
+async def upload_pdf(
+        file: UploadFile = File(...),
+        body: UploadDocumentRequestBody = Depends(),
+        api_key: str = Header(..., alias="X-Api-Key"),
+        pdf_reader: PDFReaderService = Depends(get_pdf_reader),
+        text_splitter: TextSplitter = Depends(get_text_splitter),
+        embedding_model: EmbeddingModel = Depends(get_embedding_model),
+        vector_store: VectorStore = Depends(get_vector_store)
+):
+    request_id = str(uuid.uuid4())
+    request_id_var.set(request_id)
+
+    logger.log(level="debug", func_name="POST /document", message="Received request to upload document")
+
     try:
-        vector_store_service = VectorStoreService()
-        collection_service = CollectionService(vector_store_service)
-        collections = collection_service.get_collections()
-        return {"collections": collections}
-    except RequestValidationError:
-        raise HTTPException(status_code=400, detail="Invalid input")
+        if file.content_type != "application/pdf":
+            raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF file.")
+
+        response = await UploadProcess.start_process(
+            request_id=request_id,
+            body=body,
+            file=file,
+            pdf_reader=pdf_reader,
+            text_splitter=text_splitter,
+            embedding_model=embedding_model,
+            vector_store=vector_store
+        )
+
+        # Log upload finished
+        logger.log(level="debug", func_name="POST /document", message="Upload finished")
+
+        return JSONResponse(content=response.dict())
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/collections/{collectionName}")
-async def get_collection(collectionName: str):
-    try:
-        vector_store_service = VectorStoreService()
-        collection_service = CollectionService(vector_store_service)
-        collection = collection_service.get_collection(collection_name=collectionName)
-        return {"collection": collection}
-    except RequestValidationError:
-        raise HTTPException(status_code=400, detail="Invalid input")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/collections")
-async def create_collection(collectionName: str = Form(...)):
-    try:
-        vector_store_service = VectorStoreService()
-        collection_service = CollectionService(vector_store_service)
-        response = collection_service.create_collection(collectionName)
-        return JSONResponse(content=response)
-    except RequestValidationError:
-        raise HTTPException(status_code=400, detail="Invalid input")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.delete("/collections")
-async def delete_collection(collectionName: str = Form(...)):
-    try:
-        vector_store_service = VectorStoreService()
-        collection_service = CollectionService(vector_store_service)
-        response = collection_service.delete_collection(collection_name=collectionName)
-        return JSONResponse(content=response)
-    except RequestValidationError:
-        raise HTTPException(status_code=400, detail="Invalid input")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/documents")
-async def upload(background_tasks: BackgroundTasks, file: UploadFile = File(...), userId: str = Form(...),
-                 documentId: str = Form(...)):
-    try:
-        data = await file.read()
-        background_tasks.add_task(upload_process, data=data, document_id=documentId, user_id=userId)
-        return {"message": "File uploaded successfully"}
-    except RequestValidationError:
-        raise HTTPException(status_code=400, detail="Invalid input")
-
-
-@app.post("/documents/search")
-async def search(query: Optional[str] = None, userId: Optional[str] = None, k: Optional[int] = 5):
-    try:
-        results: List[Tuple[Document, float]] = await search_process(question=query, user_id=userId,
-                                                                     document_id=None, k=k)
-        json_results = [search_results_to_dict(document=doc, score=score) for doc, score in results]
-        return JSONResponse(content=json_results)
-    except RequestValidationError:
-        raise HTTPException(status_code=400, detail="Invalid input")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/documents")
-async def get_documents(userId: Optional[str] = None, documentId: Optional[str] = None):
-    try:
-        vector_store_client = VectorStoreService()
-        vector_store_client.connect(collection_name=QDRANT_COLLECTION_NAME)
-        document_service = DocumentService(vector_store_service=vector_store_client)
-        if documentId:
-            documents = document_service.get_documents(collection_name=QDRANT_COLLECTION_NAME,
-                                                       user_id=None,
-                                                       document_id=documentId)
-        else:
-            documents = document_service.get_documents(collection_name=QDRANT_COLLECTION_NAME,
-                                                       user_id=userId,
-                                                       document_id=None)
-        return {"documents": documents}
-    except RequestValidationError:
-        raise HTTPException(status_code=400, detail="Invalid input")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.delete("/documents")
-async def delete_documents(userId: Optional[str] = None, documentId: Optional[str] = None):
-    try:
-        vector_store_client = VectorStoreService()
-        vector_store_client.connect(collection_name=QDRANT_COLLECTION_NAME)
-        document_service = DocumentService(vector_store_service=vector_store_client)
-        if documentId:
-            documents = document_service.delete_documents(collection_name=QDRANT_COLLECTION_NAME,
-                                                          user_id=None,
-                                                          document_id=documentId)
-        else:
-            documents = document_service.delete_documents(collection_name=QDRANT_COLLECTION_NAME,
-                                                          user_id=userId,
-                                                          document_id=None)
-        return {"documents": documents}
-    except RequestValidationError:
-        raise HTTPException(status_code=400, detail="Invalid input")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/chat")
-async def chat(query: str, userId: str, conversationId: str, documentId: Optional[str] = None):
-    try:
-        results = await retrieve_process(query=query, user_id=userId, conversation_id=conversationId, document_id=documentId)
-        return results
-    except RequestValidationError:
-        raise HTTPException(status_code=400, detail="Invalid input")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal Server Error")

@@ -1,2 +1,22 @@
-venv/
+# IDEs
+.idea/
+.vscode/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+
+# Distribution / packaging
+.Python
+build/
+dist/
+var/
+wheels/
+share/python-wheels/
+
+# Environments
 .env
+.venv
+env/
+venv/
+ENV/
