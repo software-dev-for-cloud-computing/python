@@ -1,9 +1,10 @@
 import os
-from typing import List
+from typing import List, Collection
 
 from langchain_core.documents import Document
 from langchain_qdrant import Qdrant
 from qdrant_client import QdrantClient, models
+from qdrant_client.http.models import CollectionInfo
 
 from app.interfaces.embedding_model import EmbeddingModel
 from app.interfaces.vector_store import VectorStore
@@ -37,7 +38,7 @@ class QdrantVectorStore(VectorStore):
                                                       binary=models.BinaryQuantizationConfig(always_ram=False, ), ),
                                                   )
 
-    def _get_collection(self, collection_name: str):
+    def _get_collection(self, collection_name: str) -> CollectionInfo:
         return self.client.get_collection(collection_name=collection_name)
 
     @logger.log_decorator(level="debug", message="Create new collection")
@@ -52,5 +53,5 @@ class QdrantVectorStore(VectorStore):
     def _delete_collection(self, collection_name: str):
         self.client.delete_collection(collection_name=collection_name)
 
-    def _collection_exists(self, collection_name: str):
+    def _collection_exists(self, collection_name: str) -> bool:
         return self.client.collection_exists(collection_name=collection_name)
