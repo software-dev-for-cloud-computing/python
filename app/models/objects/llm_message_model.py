@@ -12,4 +12,4 @@ class QAMessage(BaseModel):
                          max_length=os.getenv("MAX_LENGTH_CONTEXT_MESSAGE"))
     user_id: str
     conversation_id: str
-    timestamp: datetime
+    timestamp: str

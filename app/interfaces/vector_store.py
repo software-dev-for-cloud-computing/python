@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Any
 
+from langchain_qdrant import Qdrant
 from qdrant_client.http.models import CollectionInfo
 
 from app.interfaces.embedding_model import EmbeddingModel
@@ -8,6 +9,10 @@ from app.models.objects.chunk_model import ChunkModel
 
 
 class VectorStore(ABC):
+
+    @abstractmethod
+    def get_connection(self) -> Any:
+        pass
 
     @abstractmethod
     def add_chunks(self, chunks: List[ChunkModel], embedding_model: EmbeddingModel) -> None:

@@ -29,6 +29,9 @@ class QdrantVectorStore(VectorStore):
                                             metadata_payload_key="metadata",
                                             )
 
+    def get_connection(self) -> Qdrant:
+        return self.collection_connection
+
     @logger.log_decorator(level="debug", message="Add chunks to collection")
     def add_chunks(self, chunks: List[ChunkModel], embedding_model: EmbeddingModel) -> None:
         documents = [Document(page_content=chunk.content, metadata=chunk.metadata) for chunk in chunks]

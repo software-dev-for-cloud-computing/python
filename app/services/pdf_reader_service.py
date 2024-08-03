@@ -8,6 +8,7 @@ from app.utils.logger import Logger
 
 logger = Logger('Logger')
 
+
 class PDFReaderService(PDFReader):
     @staticmethod
     @logger.log_decorator(level="debug", message="Reading in PDF")
