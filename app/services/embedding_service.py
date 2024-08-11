@@ -2,6 +2,7 @@ import os
 from typing import List
 
 import tiktoken
+from dotenv import load_dotenv
 from langchain_openai.embeddings import OpenAIEmbeddings
 from pydantic import PositiveInt
 
@@ -10,6 +11,8 @@ from app.models.objects.chunk_model import ChunkModel
 from app.utils.logger import Logger
 
 logger = Logger('Logger')
+
+load_dotenv()
 
 DEFAULT_MODEL = os.getenv("EMBEDDING_MODEL")
 DEFAULT_DIMENSIONS = os.getenv("VECTOR_STORE_DIMENSION")

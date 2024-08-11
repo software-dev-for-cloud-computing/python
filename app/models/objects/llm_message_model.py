@@ -1,9 +1,11 @@
 import os
 from typing import Literal
 
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from datetime import datetime
 
+load_dotenv()
 
 class QAMessage(BaseModel):
     role: Literal['user', 'ai']

@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 from fastapi.exceptions import RequestValidationError, HTTPException
 
 from app.interfaces.llm_model import LlmModel
@@ -6,7 +7,6 @@ from app.interfaces.retriever import Retriever
 from app.interfaces.vector_store import VectorStore
 from app.models.objects.chat_history_model import ChatHistory
 from app.services.chains_service import RagChainService
-
 
 class QAProcess:
     @staticmethod
@@ -18,6 +18,7 @@ class QAProcess:
         query: str,
         chat_history: ChatHistory,
         conversation_id: str,
+        api_key: str
     ):
         chains = RagChainService()
         retriever_chain = chains.get_vector_store_retriever_chain(user_id=user_id,

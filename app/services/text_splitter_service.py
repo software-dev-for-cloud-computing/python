@@ -18,8 +18,8 @@ class TextSplitterService(TextSplitter):
         chunks = []
         for page_number, page in enumerate(text, start=1):
             page_chunks = self.splitter.split_text(page.page_content)
-            for chunk in tqdm(page_chunks):
-                metadata = ChunkMetadata(document_id=document_id, owner_id=owner_id, page_number=page_number)
+            for on_page_index, chunk in tqdm(enumerate(page_chunks, start=1), total=len(page_chunks)):
+                metadata = ChunkMetadata(document_id=document_id, owner_id=owner_id, page_number=page_number, on_page_index=on_page_index)
                 chunk_obj = ChunkModel(content=chunk, metadata=metadata)
                 chunks.append(chunk_obj)
         return chunks

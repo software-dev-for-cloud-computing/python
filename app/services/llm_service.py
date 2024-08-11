@@ -13,7 +13,6 @@ print(os.getenv("LLM_MIN_TOKEN_LIMIT"))
 print(os.getenv("LLM_MAX_TOKEN_LIMIT"))
 
 
-
 class OpenAILLMModel(LlmModel):
 
     def __init__(self, api_key: str):
@@ -21,7 +20,6 @@ class OpenAILLMModel(LlmModel):
         self.api_key = api_key
         self.temperature = float(os.getenv("LLM_DEFAULT_TEMP"))
         self.max_tokens = int(os.getenv("LLM_DEFAULT_TOKEN_LIMIT"))
-
 
     @validator('api_key')
     def validate_api_key(cls, value):

@@ -8,6 +8,7 @@ class ChunkMetadata(BaseModel):
     document_id: str = Field(strict=True)
     owner_id: str = Field(strict=True)
     page_number: PositiveInt = Field(strict=True)
+    on_page_index: PositiveInt = Field(strict=True)
 
     @field_validator('document_id', mode='before')
     def validate_document_id(cls, value: str) -> str:

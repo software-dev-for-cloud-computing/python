@@ -22,7 +22,9 @@ class UploadProcess:
             pdf_reader: PDFReader,
             text_splitter: TextSplitter,
             embedding_model: EmbeddingModel,
-            vector_store: VectorStore
+            vector_store: VectorStore,
+            document_id: str,
+            owner_id: str
     ) -> UploadDocumentResponse | InternalServerErrorResponse:
         try:
             # Read PDF content from the file in the request
@@ -36,7 +38,7 @@ class UploadProcess:
             pdf_text = await pdf_reader.read_pdf(pdf_data.file)
 
             # Chunk the text
-            chunks = text_splitter.split_text(text=pdf_text, document_id="1", owner_id="1")
+            chunks = text_splitter.split_text(text=pdf_text, document_id=document_id, owner_id=owner_id)
 
             # Estimate token usage for embedding
             logger.log(level="debug", func_name="upload_process", message="Get number of tokens for the embedding")
@@ -45,7 +47,9 @@ class UploadProcess:
             # Save to Qdrant
             logger.log(level="debug", func_name="upload_process",
                        message="Add the newly created chunks to the vectorstore")
-            vector_store.add_chunks(chunks=chunks, embedding_model=embedding_model)
+            chunks_added = vector_store.add_chunks(chunks=chunks, embedding_model=embedding_model)
+
+            print(chunks_added)
 
             # Return response
             return UploadDocumentResponse(

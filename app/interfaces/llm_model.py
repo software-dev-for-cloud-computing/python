@@ -1,9 +1,11 @@
 import os
 from abc import ABC, abstractmethod
 
+from dotenv import load_dotenv
 from langchain_core.language_models import BaseChatModel
 from pydantic import Field
 
+load_dotenv()
 
 class LlmModel(ABC):
     model_name: str = Field(os.getenv("LLM_MODEL"))

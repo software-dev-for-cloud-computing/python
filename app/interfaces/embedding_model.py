@@ -2,10 +2,12 @@ import os
 from abc import ABC, abstractmethod
 from typing import List, Type, Any
 
+from dotenv import load_dotenv
 from pydantic import PositiveInt, Field
 
 from app.models.objects.chunk_model import ChunkModel
 
+load_dotenv()
 DEFAULT_MODEL = os.getenv("EMBEDDING_MODEL")
 
 
