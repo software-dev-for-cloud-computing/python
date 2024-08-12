@@ -130,7 +130,7 @@ class VectorStoreQdrant(VectorStore):
             else:
                 filter = {"owner_id": user_id, "document_id": document_id}
 
-            return connection.similarity_search(
+            return connection.similarity_search_with_relevance_scores(
                 query=query,
                 k=k,
                 filter=filter,

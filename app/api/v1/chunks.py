@@ -131,9 +131,18 @@ async def search_documents(
         vector_store: VectorStore = Depends(get_vector_store),
         embedding_model: EmbeddingModel = Depends(get_embedding_model),
         api_key: str = Header(..., alias="X-Api-Key"),
-
 ):
-    try:
+    response = vector_store.search_chunks(
+        embedding_model=embedding_model,
+        query=query,
+        user_id=userId,
+        document_id=documentId,
+        k=k
+    )
+    return response
+
+    '''
+        try:
         response = await vector_store.search_chunks(embedding_model=embedding_model,
                                                     query=query,
                                                     user_id=userId,
@@ -142,6 +151,8 @@ async def search_documents(
         return JSONResponse(content=response)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal Server Error")
+    '''
+
 
 
 """
