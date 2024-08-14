@@ -87,7 +87,7 @@ async def upload_pdf(
         return JSONResponse(content=response.dict())
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal Server Error | {e}")
+        return InternalServerErrorResponse(message=str(e))
 
 
 @router.delete("/api/v1/documents/{userId}/{documentId}")
@@ -100,7 +100,7 @@ async def delete_document(
         response = vector_store.delete_chunks(document_id=documentId, user_id=userId)
         return JSONResponse(content=response.dict())
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        return InternalServerErrorResponse(message=str(e))
 
 
 @router.get("/api/v1/documents/{userId}")
@@ -108,8 +108,11 @@ async def get_documents(
         userId: str,
         vector_store: VectorStore = Depends(get_vector_store),
 ):
-    response = vector_store.get_all_chunks(user_id=userId)
-    return response
+    try:
+        response = vector_store.get_all_chunks(user_id=userId)
+        return response
+    except Exception as e:
+        return InternalServerErrorResponse(message=str(e))
 
 
 @router.get("/api/v1/documents/{userId}/{documentId}")
@@ -118,8 +121,11 @@ async def get_document(
         documentId: str,
         vector_store: VectorStore = Depends(get_vector_store),
 ):
-    response = vector_store.get_chunks(document_id=documentId, user_id=userId)
-    return response
+    try:
+        response = vector_store.get_chunks(document_id=documentId, user_id=userId)
+        return response
+    except Exception as e:
+        return InternalServerErrorResponse(message=str(e))
 
 
 @router.post("/api/v1/documents/search")
@@ -132,88 +138,22 @@ async def search_documents(
         embedding_model: EmbeddingModel = Depends(get_embedding_model),
         api_key: str = Header(..., alias="X-Api-Key"),
 ):
-    response = vector_store.search_chunks(
-        embedding_model=embedding_model,
-        query=query,
-        user_id=userId,
-        document_id=documentId,
-        k=k
-    )
-    return response
+    try:
+        response = vector_store.search_chunks(
+            embedding_model=embedding_model,
+            query=query,
+            user_id=userId,
+            document_id=documentId,
+            k=k
+        )
 
-    '''
-        try:
-        response = await vector_store.search_chunks(embedding_model=embedding_model,
-                                                    query=query,
-                                                    user_id=userId,
-                                                    document_id=documentId,
-                                                    k=k)
-        return JSONResponse(content=response)
+        return response
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal Server Error")
-    '''
-
-
+        return InternalServerErrorResponse(message=str(e))
 
 """
 
 
-@router.get("/documents")
-async def get_documents(userId: Optional[str] = None, documentId: Optional[str] = None):
-    try:
-        vector_store_client = VectorStoreService()
-        vector_store_client.connect(collection_name=QDRANT_COLLECTION_NAME)
-        document_service = DocumentService(vector_store_service=vector_store_client)
-        if documentId:
-            documents = document_service.get_documents(collection_name=QDRANT_COLLECTION_NAME,
-                                                       user_id=None,
-                                                       document_id=documentId)
-        else:
-            documents = document_service.get_documents(collection_name=QDRANT_COLLECTION_NAME,
-                                                       user_id=userId,
-                                                       document_id=None)
-        return {"documents": documents}
-    except RequestValidationError:
-        raise HTTPException(status_code=400, detail="Invalid input")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/documents/search_chunks")
-async def search_chunks(
-        query: Optional[str] = None,
-        userId: Optional[str] = None,
-        k: Optional[int] = 5):
-    try:
-        results: List[Tuple[Document, float]] = await search_process(question=query, user_id=userId,
-                                                                     document_id=None, k=k)
-        json_results = [search_results_to_dict(document=doc, score=score) for doc, score in results]
-        return JSONResponse(content=json_results)
-    except RequestValidationError:
-        raise HTTPException(status_code=400, detail="Invalid input")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/documents")
-async def get_documents(userId: Optional[str] = None, documentId: Optional[str] = None):
-    try:
-        vector_store_client = VectorStoreService()
-        vector_store_client.connect(collection_name=QDRANT_COLLECTION_NAME)
-        document_service = DocumentService(vector_store_service=vector_store_client)
-        if documentId:
-            documents = document_service.get_documents(collection_name=QDRANT_COLLECTION_NAME,
-                                                       user_id=None,
-                                                       document_id=documentId)
-        else:
-            documents = document_service.get_documents(collection_name=QDRANT_COLLECTION_NAME,
-                                                       user_id=userId,
-                                                       document_id=None)
-        return {"documents": documents}
-    except RequestValidationError:
-        raise HTTPException(status_code=400, detail="Invalid input")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/documents")

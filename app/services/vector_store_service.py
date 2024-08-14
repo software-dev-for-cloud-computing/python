@@ -10,7 +10,8 @@ from qdrant_client.http.models import CollectionInfo
 
 from app.interfaces.embedding_model import EmbeddingModel
 from app.interfaces.vector_store import VectorStore
-from app.models.objects.chunk_model import ChunkModel
+from app.models.dto.search import SearchResponse, DocumentWithScore
+from app.models.objects.chunk_model import ChunkModel, ChunkMetadata
 from app.utils.logger import Logger
 
 logger = Logger('app_logger')
@@ -130,11 +131,29 @@ class VectorStoreQdrant(VectorStore):
             else:
                 filter = {"owner_id": user_id, "document_id": document_id}
 
-            return connection.similarity_search_with_relevance_scores(
+            results = connection.similarity_search_with_relevance_scores(
                 query=query,
                 k=k,
                 filter=filter,
             )
+
+            for result in results:
+                document_data, score = result
+                print("document_data")
+                print(document_data)
+
+                print("score")
+                print(score)
+                yield DocumentWithScore(
+                    content=document_data.page_content,
+                    metadata=ChunkMetadata(
+                        document_id=document_data.metadata["document_id"],
+                        owner_id=document_data.metadata["owner_id"],
+                        page_number=document_data.metadata["page_number"],
+                        on_page_index=document_data.metadata["on_page_index"]
+                    ),
+                    score=score
+                )
 
         except RequestValidationError:
             raise HTTPException(status_code=400, detail="Invalid input")
@@ -147,7 +166,7 @@ class VectorStoreQdrant(VectorStore):
             return self.client.get_collection(collection_name=collection_name)
         return None
 
-    def get_collections(self):  # -> List[CollectionInfo]:
+    def get_collections(self):
         return self.client.get_collections()
 
     @logger.log_decorator(level="debug", message="Create new collection")
