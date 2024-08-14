@@ -32,39 +32,13 @@ class RagChainService(RagChains):
             combine_docs_chain=llm_chain
         )
 
-    def run_rag_chain(self, rag_chain, query, chat_history: ChatHistory, user_id, conversation_id):
+    def run_rag_chain(self, rag_chain, query, chat_history: ChatHistory, user_id):
         print("Running RAG chain")
-        # Create the callable for getting chat history
-        history_callable = chat_history.get_langchain_base_chat_message_history_callable()
 
-        runner = RunnableWithMessageHistory(
-            rag_chain,
-            history_callable,
-            input_messages_key="input",
-            history_messages_key="chat_history",
-            history_factory_config=[
-                ConfigurableFieldSpec(
-                    id="user_id",
-                    annotation=str,
-                    name="User ID",
-                    description="Unique identifier for the user.",
-                    default="",
-                    is_shared=True,
-                ),
-                ConfigurableFieldSpec(
-                    id="conversation_id",
-                    annotation=str,
-                    name="Conversation ID",
-                    description="Unique identifier for the conversation.",
-                    default="",
-                    is_shared=True,
-                ),
-            ],
-        )
+        chat_history = chat_history.get_langchain_base_chat_message_history().messages
 
-        llm_response = runner.invoke(
-            {"input": query, "chat_history": chat_history},
-            config={"configurable": {"user_id": user_id, "conversation_id": conversation_id}}
+        llm_response = rag_chain.invoke(
+            {"input": query, "chat_history": chat_history}
         )
 
         return llm_response

@@ -43,6 +43,6 @@ class ChunkModel(BaseModel):
             raise InvalidContentError("Content must be at least 10 characters long")
 
         # Remove unwanted characters
-        value = value.replace("\n\n", " ").replace("\"", "")
+        value = value.replace("\n\n", " ").replace("\n", " ").replace("\"", "").replace("  ", " ")
 
         return value

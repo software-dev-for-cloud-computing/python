@@ -14,7 +14,6 @@ class RelatedDocument(BaseModel):
 class QAMessageWithDocumentsResponse(BaseModel):
     role: str
     questionId: str
-    conversationId: str
     answer: str
     timestamp: datetime
     relatedDocuments: List[RelatedDocument]

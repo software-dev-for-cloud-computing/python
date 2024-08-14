@@ -12,7 +12,8 @@ from app.models.objects.chat_history_model import ChatHistory
 
 class RagChains(ABC):
     @abstractmethod
-    def get_vector_store_retriever_chain(self, user_id: str, llm: LlmModel, retriever: Retriever, prompt: RagPrompts) -> Runnable:
+    def get_vector_store_retriever_chain(self, user_id: str, llm: LlmModel, retriever: Retriever,
+                                         prompt: RagPrompts) -> Runnable:
         pass
 
     @abstractmethod
@@ -29,6 +30,5 @@ class RagChains(ABC):
                       query: str,
                       chat_history: Any,
                       user_id: str,
-                      conversation_id: str
-                  ) -> QAMessageWithDocumentsResponse:
+                      ) -> QAMessageWithDocumentsResponse:
         pass

@@ -17,7 +17,6 @@ class QAProcess:
         user_id: str,
         query: str,
         chat_history: ChatHistory,
-        conversation_id: str,
         api_key: str
     ):
         chains = RagChainService()
@@ -32,8 +31,9 @@ class QAProcess:
         result = chains.run_rag_chain(rag_chain=rag_chain,
                                       query=query,
                                       chat_history=chat_history,
-                                      user_id=user_id,
-                                      conversation_id=conversation_id)
+                                      user_id=user_id
+                                      )
+
         return result
 
 

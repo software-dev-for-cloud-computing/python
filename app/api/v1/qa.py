@@ -50,7 +50,6 @@ async def qa_request(
         query: str,
         user_id: str,
         chat_history: List[QAMessage],
-        conversation_id: str,
         api_key: str = Header(..., alias="X-Api-Key"),
         document_id: Optional[str] = None,
         llm: LlmModel = Depends(get_llm),
@@ -69,7 +68,6 @@ async def qa_request(
             user_id=user_id,
             query=query,
             chat_history=chat_history,
-            conversation_id=conversation_id,
             api_key=api_key,
         )
 

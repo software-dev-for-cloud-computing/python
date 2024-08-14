@@ -61,4 +61,4 @@ class UploadProcess:
             )
 
         except Exception as e:
-            return InternalServerErrorResponse(error=str(e))
+            return InternalServerErrorResponse(message=str(e))
