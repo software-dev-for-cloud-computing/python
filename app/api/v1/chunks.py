@@ -6,7 +6,8 @@ from fastapi import File, UploadFile, HTTPException, Depends, Header, APIRouter
 from fastapi.responses import JSONResponse
 from app.business_logic.upload_process import UploadProcess
 from app.exceptions.http_exceptions import HTTPInternalServerError
-from app.models.dto.documents import UploadDocumentRequestBody, UploadDocumentResponse
+from app.models.dto.documents import UploadDocumentRequest, UploadDocumentResponse
+from app.models.objects.chunk_model import ChunkModel
 from app.services.pdf_reader_service import PDFReaderService
 from app.services.text_splitter_service import TextSplitterService
 from app.services.embedding_service import OpenAIEmbeddingModel
@@ -35,7 +36,7 @@ def get_text_splitter() -> TextSplitter:
     return TextSplitterService(chunk_size=500)
 
 
-def get_embedding_model(api_key: str = Header(..., alias="X-Api-Key")) -> EmbeddingModel:
+def get_embedding_model(api_key: str = Header(..., alias="x-api-key")) -> EmbeddingModel:
     return OpenAIEmbeddingModel(
         api_key=api_key,
         model_name=EMBEDDING_MODEL,
@@ -50,8 +51,8 @@ def get_vector_store() -> VectorStore:
 @router.post("/document", response_model=UploadDocumentResponse)
 async def upload_pdf(
         file: UploadFile = File(...),
-        body: UploadDocumentRequestBody = Depends(),
-        api_key: str = Header(..., alias="X-Api-Key"),
+        params: UploadDocumentRequest = Depends(),
+        api_key: str = Header(..., alias="x-api-key"),
         pdf_reader: PDFReaderService = Depends(get_pdf_reader),
         text_splitter: TextSplitter = Depends(get_text_splitter),
         embedding_model: EmbeddingModel = Depends(get_embedding_model),
@@ -68,14 +69,14 @@ async def upload_pdf(
 
         response = await UploadProcess.start_process(
             request_id=request_id,
-            body=body,
+            params=params,
             file=file,
             pdf_reader=pdf_reader,
             text_splitter=text_splitter,
             embedding_model=embedding_model,
             vector_store=vector_store,
-            document_id=body.document_id,
-            owner_id=body.owner_id
+            document_id=params.document_id,
+            owner_id=params.owner_id
         )
 
         # Log upload finished
@@ -135,6 +136,7 @@ async def get_document(
 
     try:
         response = vector_store.get_chunks(document_id=documentId, user_id=userId)
+        # response = sorted(response, key=lambda chunk: (chunk.metadata.page_number, chunk.metadata.on_page_index))
         return response
     except Exception as e:
         raise HTTPInternalServerError(
@@ -147,10 +149,10 @@ async def search_documents(
         query: str,
         userId: str,
         documentId: Optional[str] = None,
-        k: int = 5,
+        k: int = int(os.getenv("MAX_K_RESULTS")),
         vector_store: VectorStore = Depends(get_vector_store),
         embedding_model: EmbeddingModel = Depends(get_embedding_model),
-        api_key: str = Header(..., alias="X-Api-Key"),
+        api_key: str = Header(..., alias="x-api-key"),
 ):
     request_id = str(uuid.uuid4())
     request_id_var.set(request_id)

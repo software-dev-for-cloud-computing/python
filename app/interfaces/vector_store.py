@@ -19,7 +19,7 @@ class VectorStore(ABC):
         pass
 
     @abstractmethod
-    def get_chunks(self, user_id: str, document_id: str):  # -> List[ChunkModel]:
+    def get_chunks(self, user_id: str, document_id: str) -> List[ChunkModel]:
         pass
 
     @abstractmethod

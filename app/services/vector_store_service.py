@@ -19,6 +19,7 @@ logger = Logger('app_logger')
 load_dotenv()
 
 COLLECTION_NAME = os.getenv("VECTOR_STORE_COLLECTION")
+MAX_K_RESULTS = os.getenv("MAX_K_RESULTS")
 
 
 class VectorStoreQdrant(VectorStore):
@@ -122,7 +123,7 @@ class VectorStoreQdrant(VectorStore):
             raise HTTPException(status_code=500, detail=str(e))
 
     @logger.log_decorator(level="debug", message="Search for chunks")
-    def search_chunks(self, embedding_model: EmbeddingModel, query: str, user_id: str, document_id: Optional[str] = None, k: int = 5):
+    def search_chunks(self, embedding_model: EmbeddingModel, query: str, user_id: str, document_id: Optional[str] = None, k: int = MAX_K_RESULTS):
         try:
             connection = self.get_connection(embedding_model)
 

@@ -1,11 +1,12 @@
 from typing import List
 from pydantic import BaseModel, PositiveInt, Field, field_validator
-from app.exceptions.exceptions import InvalidOwnerIdError, InvalidDocumentIdError
+from app.exceptions.exceptions import InvalidOwnerIdError, InvalidDocumentIdError, InvalidConversationIdError
 from app.exceptions.chunk_exceptions import InvalidContentError, InvalidPageNumberError
 
 
 class ChunkMetadata(BaseModel):
     document_id: str = Field(strict=True)
+    conversation_id: str = Field(strict=True)
     owner_id: str = Field(strict=True)
     page_number: PositiveInt = Field(strict=True)
     on_page_index: PositiveInt = Field(strict=True)
@@ -14,6 +15,12 @@ class ChunkMetadata(BaseModel):
     def validate_document_id(cls, value: str) -> str:
         if not isinstance(value, str):
             raise InvalidDocumentIdError()
+        return value
+
+    @field_validator('conversation_id', mode='before')
+    def validate_conversation_id(cls, value: str) -> str:
+        if not isinstance(value, str):
+            raise InvalidConversationIdError()
         return value
 
     @field_validator('owner_id', mode='before')

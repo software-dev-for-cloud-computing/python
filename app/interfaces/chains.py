@@ -1,7 +1,9 @@
+import os
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Optional
 
 from langchain_core.runnables import Runnable
+from pydantic import PositiveInt
 
 from app.interfaces.llm_model import LlmModel
 from app.interfaces.prompts import RagPrompts
@@ -11,8 +13,14 @@ from app.models.objects.llm_message_model import LLMResponse
 
 class RagChains(ABC):
     @abstractmethod
-    def get_vector_store_retriever_chain(self, user_id: str, llm: LlmModel, retriever: Retriever,
-                                         prompt: RagPrompts) -> Runnable:
+    def get_vector_store_retriever_chain(self, user_id: str,
+                                         llm: LlmModel,
+                                         retriever: Retriever,
+                                         prompt: RagPrompts,
+                                         document_id: Optional[str] = None,
+                                         conversation_id: Optional[str] = None,
+                                         k: PositiveInt = int(os.getenv("MAX_K_RESULTS"))
+                                         ) -> Runnable:
         pass
 
     @abstractmethod

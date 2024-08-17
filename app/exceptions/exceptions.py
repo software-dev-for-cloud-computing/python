@@ -12,3 +12,11 @@ class InvalidDocumentIdError(Exception):
     def __init__(self, message="Document ID must be a string"):
         self.message = message
         super().__init__(self.message)
+
+
+class InvalidConversationIdError(Exception):
+    """Raised when a conversation id is not valid."""
+
+    def __init__(self, message="Conversation ID must be a string"):
+        self.message = message
+        super().__init__(self.message)

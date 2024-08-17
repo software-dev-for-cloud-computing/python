@@ -1,15 +1,16 @@
 import os
 from typing import Optional, List
 
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from app.business_logic.qa_process import QAProcess
 from app.interfaces.embedding_model import EmbeddingModel
 from app.interfaces.llm_model import LlmModel
 from app.interfaces.prompts import RagPrompts
 from app.interfaces.retriever import Retriever
 from app.interfaces.vector_store import VectorStore
+from app.models.dto.documents import UploadDocumentRequest
 from app.models.dto.interfaces import InternalServerErrorResponse
-from app.models.dto.qa import QAResponse
+from app.models.dto.qa import QAResponse, QARequest
 from app.models.objects.chat_history_model import ChatHistory
 from app.models.objects.llm_message_model import QAHistoryMessage
 from app.services.llm_service import OpenAILLMModel
@@ -18,11 +19,14 @@ from app.services.retriever_service import QdrantRetriever
 from app.services.embedding_service import OpenAIEmbeddingModel
 from app.services.vector_store_service import VectorStoreQdrant
 from app.exceptions.http_exceptions import HTTPInternalServerError
+from app.utils.logger import Logger
 
 router = APIRouter()
 
+logger = Logger(name="Logger")
 
-def get_embedding_model(api_key: str = Header(..., alias="X-Api-Key")) -> EmbeddingModel:
+
+def get_embedding_model(api_key: str = Header(..., alias="x-api-key")) -> EmbeddingModel:
     return OpenAIEmbeddingModel(
         api_key=api_key,
         model_name=os.getenv("EMBEDDING_MODEL"),
@@ -34,7 +38,7 @@ def get_vector_store() -> VectorStore:
     return VectorStoreQdrant()
 
 
-def get_llm(api_key: str = Header(..., alias="X-Api-Key")) -> LlmModel:
+def get_llm(api_key: str = Header(..., alias="x-api-key")) -> LlmModel:
     return OpenAILLMModel(api_key=api_key)
 
 
@@ -49,33 +53,39 @@ def get_prompts() -> RagPrompts:
 
 @router.post("/qa", response_model=QAResponse)
 async def qa_request(
-        query: str,
-        user_id: str,
         chat_history: List[QAHistoryMessage],
-        api_key: str = Header(..., alias="X-Api-Key"),
-        document_id: Optional[str] = None,
+        api_key: str = Header(..., alias="x-api-key"),
+        query: str = Query(..., alias="query"),
+        owner_id: str = Query(..., alias="ownerId"),
+        conversation_id: str = Query(..., alias="conversationId"),
+        document_id: Optional[str] = Query(None, alias="documentId"),
         llm: LlmModel = Depends(get_llm),
         embedding_model: EmbeddingModel = Depends(get_embedding_model),
         vector_store: VectorStore = Depends(get_vector_store),
         retriever: Retriever = Depends(get_retriever),
         prompts: RagPrompts = Depends(get_prompts),
 ):
-    try:
-        chat_history = ChatHistory(messages=chat_history)
+    logger.log(level="debug", func_name="POST /qa", message="QA request received")
+    # try:
+    chat_history = ChatHistory(messages=chat_history)
 
-        response = await QAProcess.start_process(
-            llm=llm,
-            retriever=retriever,
-            prompts=prompts,
-            user_id=user_id,
-            query=query,
-            chat_history=chat_history,
-            api_key=api_key,
-        )
+    response = await QAProcess.start_process(
+        llm=llm,
+        retriever=retriever,
+        prompts=prompts,
+        user_id=owner_id,
+        query=query,
+        document_id=document_id,
+        conversation_id=conversation_id,
+        chat_history=chat_history,
+        api_key=api_key,
+    )
 
-        return response
-    except Exception as e:
+    return response
+    '''
+        except Exception as e:
         raise HTTPInternalServerError(
             error=str(e)
         )
+    '''
 

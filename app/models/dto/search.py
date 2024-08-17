@@ -11,4 +11,4 @@ class DocumentWithScore(ChunkModel):
 
 class SearchResponse(BaseModel):
     requestId: str
-    relatedDocuments: List[DocumentWithScore]
+    related_documents: List[DocumentWithScore] = Field(..., alias="relatedDocuments")

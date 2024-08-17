@@ -6,9 +6,10 @@ from app.models.dto.interfaces import NoContentResponse, SuccessResponse, Intern
 from app.models.objects.chunk_model import ChunkModel
 
 
-class UploadDocumentRequestBody(BaseModel):
-    owner_id: str = Field(..., alias="OwnerId")
-    document_id: str = Field(..., alias="DocumentId")
+class UploadDocumentRequest(BaseModel):
+    owner_id: str = Field(..., alias="ownerId")
+    document_id: str = Field(..., alias="documentId")
+    conversation_id: str = Field(..., alias="conversationId")
 
 
 class UploadDocumentResponse(SuccessResponse):
