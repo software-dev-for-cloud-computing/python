@@ -8,14 +8,16 @@ from app.interfaces.llm_model import LlmModel
 from app.interfaces.prompts import RagPrompts
 from app.interfaces.retriever import Retriever
 from app.interfaces.vector_store import VectorStore
+from app.models.dto.interfaces import InternalServerErrorResponse
+from app.models.dto.qa import QAResponse
 from app.models.objects.chat_history_model import ChatHistory
-from app.models.objects.llm_message_model import QAMessage
+from app.models.objects.llm_message_model import QAHistoryMessage
 from app.services.llm_service import OpenAILLMModel
 from app.services.qa_prompts_service import RagPromptsService
 from app.services.retriever_service import QdrantRetriever
 from app.services.embedding_service import OpenAIEmbeddingModel
 from app.services.vector_store_service import VectorStoreQdrant
-from app.utils.logger import Logger
+from app.exceptions.http_exceptions import HTTPInternalServerError
 
 router = APIRouter()
 
@@ -45,11 +47,11 @@ def get_prompts() -> RagPrompts:
     return RagPromptsService()
 
 
-@router.post("/qa", response_model=None)
+@router.post("/qa", response_model=QAResponse)
 async def qa_request(
         query: str,
         user_id: str,
-        chat_history: List[QAMessage],
+        chat_history: List[QAHistoryMessage],
         api_key: str = Header(..., alias="X-Api-Key"),
         document_id: Optional[str] = None,
         llm: LlmModel = Depends(get_llm),
@@ -73,4 +75,7 @@ async def qa_request(
 
         return response
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal Server Error | {e}")
+        raise HTTPInternalServerError(
+            error=str(e)
+        )
+

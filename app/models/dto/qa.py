@@ -1,19 +1,10 @@
-from pydantic import BaseModel, Field
-from datetime import datetime
 from typing import List
-from app.models.objects.llm_message_model import QAMessage
+
+from app.models.dto.interfaces import SuccessResponse
+from app.models.objects.chunk_model import ChunkModel
 
 
-class RelatedDocument(BaseModel):
-    documentId: str
-    pageNumber: int
-    score: float
-    content: str
-
-
-class QAMessageWithDocumentsResponse(BaseModel):
-    role: str
-    questionId: str
+class QAResponse(SuccessResponse):
+    question: str
     answer: str
-    timestamp: datetime
-    relatedDocuments: List[RelatedDocument]
+    related_documents: List[ChunkModel]

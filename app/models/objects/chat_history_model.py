@@ -1,11 +1,11 @@
 from pydantic import BaseModel
 from typing import List
-from app.models.objects.llm_message_model import QAMessage
+from app.models.objects.llm_message_model import QAHistoryMessage
 from langchain_community.chat_message_histories import ChatMessageHistory
 
 
 class ChatHistory(BaseModel):
-    messages: List[QAMessage]
+    messages: List[QAHistoryMessage]
 
     def get_langchain_base_chat_message_history(self):
         history = ChatMessageHistory()

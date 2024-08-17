@@ -1,24 +1,22 @@
-from dotenv import load_dotenv
-from fastapi.exceptions import RequestValidationError, HTTPException
-
 from app.interfaces.llm_model import LlmModel
 from app.interfaces.prompts import RagPrompts
 from app.interfaces.retriever import Retriever
-from app.interfaces.vector_store import VectorStore
 from app.models.objects.chat_history_model import ChatHistory
+from app.models.objects.llm_message_model import LLMResponse
 from app.services.chains_service import RagChainService
+
 
 class QAProcess:
     @staticmethod
     async def start_process(
-        llm: LlmModel,
-        retriever: Retriever,
-        prompts: RagPrompts,
-        user_id: str,
-        query: str,
-        chat_history: ChatHistory,
-        api_key: str
-    ):
+            llm: LlmModel,
+            retriever: Retriever,
+            prompts: RagPrompts,
+            user_id: str,
+            query: str,
+            chat_history: ChatHistory,
+            api_key: str
+    ) -> LLMResponse:
         chains = RagChainService()
         retriever_chain = chains.get_vector_store_retriever_chain(user_id=user_id,
                                                                   llm=llm,
@@ -35,5 +33,3 @@ class QAProcess:
                                       )
 
         return result
-
-

@@ -139,11 +139,6 @@ class VectorStoreQdrant(VectorStore):
 
             for result in results:
                 document_data, score = result
-                print("document_data")
-                print(document_data)
-
-                print("score")
-                print(score)
                 yield DocumentWithScore(
                     content=document_data.page_content,
                     metadata=ChunkMetadata(

@@ -1,11 +1,8 @@
 import os
-
 from dotenv import load_dotenv
-from fastapi import APIRouter, Depends, HTTPException, Header
-
-from app.interfaces.embedding_model import EmbeddingModel
+from fastapi import APIRouter, Depends
+from app.exceptions.http_exceptions import HTTPInternalServerError
 from app.interfaces.vector_store import VectorStore
-from app.services.embedding_service import OpenAIEmbeddingModel
 from app.services.vector_store_service import VectorStoreQdrant
 from app.utils.logger import Logger
 
@@ -28,7 +25,9 @@ async def get_collections(vector_store: VectorStoreQdrant = Depends(get_vector_s
         collections = vector_store.get_collections()
         return collections
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPInternalServerError(
+            error=str(e)
+        )
 
 
 @router.get("/collections/{collection_name}")
@@ -37,7 +36,9 @@ async def get_collection(collection_name: str, vector_store: VectorStoreQdrant =
         collection_info = vector_store.get_collection(collection_name)
         return collection_info
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPInternalServerError(
+            error=str(e)
+        )
 
 
 @router.post("/collections/{collection_name}")
@@ -46,7 +47,9 @@ async def create_collection(collection_name: str, vector_store: VectorStoreQdran
         vector_store.create_collection(collection_name)
         return {"message": f"Collection '{collection_name}' created successfully."}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPInternalServerError(
+            error=str(e)
+        )
 
 
 @router.delete("/collections/{collection_name}")
@@ -55,4 +58,6 @@ async def delete_collection(collection_name: str, vector_store: VectorStoreQdran
         vector_store.delete_collection(collection_name)
         return {"message": f"Collection '{collection_name}' deleted successfully."}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPInternalServerError(
+            error=str(e)
+        )

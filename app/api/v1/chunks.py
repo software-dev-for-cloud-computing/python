@@ -1,15 +1,12 @@
-import asyncio
-import logging
 import os
 import uuid
-from typing import Optional, List
+from typing import Optional
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Header, APIRouter
-from fastapi.exceptions import RequestValidationError
+from fastapi import File, UploadFile, HTTPException, Depends, Header, APIRouter
 from fastapi.responses import JSONResponse
 from app.business_logic.upload_process import UploadProcess
+from app.exceptions.http_exceptions import HTTPInternalServerError
 from app.models.dto.documents import UploadDocumentRequestBody, UploadDocumentResponse
-from app.models.dto.interfaces import InternalServerErrorResponse
 from app.services.pdf_reader_service import PDFReaderService
 from app.services.text_splitter_service import TextSplitterService
 from app.services.embedding_service import OpenAIEmbeddingModel
@@ -50,7 +47,7 @@ def get_vector_store() -> VectorStore:
     return VectorStoreQdrant()
 
 
-@router.post("/document", response_model=UploadDocumentResponse | InternalServerErrorResponse)
+@router.post("/document", response_model=UploadDocumentResponse)
 async def upload_pdf(
         file: UploadFile = File(...),
         body: UploadDocumentRequestBody = Depends(),
@@ -87,7 +84,9 @@ async def upload_pdf(
         return JSONResponse(content=response.dict())
 
     except Exception as e:
-        return InternalServerErrorResponse(message=str(e))
+        raise HTTPInternalServerError(
+            error=str(e)
+        )
 
 
 @router.delete("/api/v1/documents/{userId}/{documentId}")
@@ -96,11 +95,16 @@ async def delete_document(
         documentId: str,
         vector_store: VectorStore = Depends(get_vector_store),
 ):
+    request_id = str(uuid.uuid4())
+    request_id_var.set(request_id)
+
     try:
         response = vector_store.delete_chunks(document_id=documentId, user_id=userId)
         return JSONResponse(content=response.dict())
     except Exception as e:
-        return InternalServerErrorResponse(message=str(e))
+        raise HTTPInternalServerError(
+            error=str(e)
+        )
 
 
 @router.get("/api/v1/documents/{userId}")
@@ -108,11 +112,16 @@ async def get_documents(
         userId: str,
         vector_store: VectorStore = Depends(get_vector_store),
 ):
+    request_id = str(uuid.uuid4())
+    request_id_var.set(request_id)
+
     try:
         response = vector_store.get_all_chunks(user_id=userId)
         return response
     except Exception as e:
-        return InternalServerErrorResponse(message=str(e))
+        raise HTTPInternalServerError(
+            error=str(e)
+        )
 
 
 @router.get("/api/v1/documents/{userId}/{documentId}")
@@ -121,11 +130,16 @@ async def get_document(
         documentId: str,
         vector_store: VectorStore = Depends(get_vector_store),
 ):
+    request_id = str(uuid.uuid4())
+    request_id_var.set(request_id)
+
     try:
         response = vector_store.get_chunks(document_id=documentId, user_id=userId)
         return response
     except Exception as e:
-        return InternalServerErrorResponse(message=str(e))
+        raise HTTPInternalServerError(
+            error=str(e)
+        )
 
 
 @router.post("/api/v1/documents/search")
@@ -138,6 +152,9 @@ async def search_documents(
         embedding_model: EmbeddingModel = Depends(get_embedding_model),
         api_key: str = Header(..., alias="X-Api-Key"),
 ):
+    request_id = str(uuid.uuid4())
+    request_id_var.set(request_id)
+
     try:
         response = vector_store.search_chunks(
             embedding_model=embedding_model,
@@ -149,30 +166,8 @@ async def search_documents(
 
         return response
     except Exception as e:
-        return InternalServerErrorResponse(message=str(e))
-
-"""
-
-
+        raise HTTPInternalServerError(
+            error=str(e)
+        )
 
 
-@router.delete("/documents")
-async def delete_documents(userId: Optional[str] = None, documentId: Optional[str] = None):
-    try:
-        vector_store_client = VectorStoreService()
-        vector_store_client.connect(collection_name=QDRANT_COLLECTION_NAME)
-        document_service = DocumentService(vector_store_service=vector_store_client)
-        if documentId:
-            documents = document_service.delete_documents(collection_name=QDRANT_COLLECTION_NAME,
-                                                          user_id=None,
-                                                          document_id=documentId)
-        else:
-            documents = document_service.delete_documents(collection_name=QDRANT_COLLECTION_NAME,
-                                                          user_id=userId,
-                                                          document_id=None)
-        return {"documents": documents}
-    except RequestValidationError:
-        raise HTTPException(status_code=400, detail="Invalid input")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-"""

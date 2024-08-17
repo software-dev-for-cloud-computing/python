@@ -6,8 +6,7 @@ from langchain_core.runnables import Runnable
 from app.interfaces.llm_model import LlmModel
 from app.interfaces.prompts import RagPrompts
 from app.interfaces.retriever import Retriever
-from app.models.dto.qa import QAMessageWithDocumentsResponse
-from app.models.objects.chat_history_model import ChatHistory
+from app.models.objects.llm_message_model import LLMResponse
 
 
 class RagChains(ABC):
@@ -30,5 +29,5 @@ class RagChains(ABC):
                       query: str,
                       chat_history: Any,
                       user_id: str,
-                      ) -> QAMessageWithDocumentsResponse:
+                      ) -> LLMResponse:
         pass
