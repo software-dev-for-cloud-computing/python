@@ -23,6 +23,7 @@ load_dotenv()
 
 logger = Logger('Logger')
 
+
 class RagChainService(RagChains):
     def __init__(self):
         pass
@@ -60,18 +61,11 @@ class RagChainService(RagChains):
 
     @logger.log_decorator(level="debug", message="Step 4: Running rag chain")
     def run_rag_chain(self, rag_chain, query, chat_history: ChatHistory, user_id) -> LLMResponse:
-
         chat_history = chat_history.get_langchain_base_chat_message_history().messages
-
-        print("Chat history")
-        print(chat_history)
 
         response = rag_chain.invoke(
             {"input": query, "chat_history": chat_history}
         )
-
-        print("Response")
-        print(response)
 
         llm_response: LLMResponse = LLMResponse(
             question=query,
@@ -89,8 +83,6 @@ class RagChainService(RagChains):
                 ) for doc in response["context"]
             ]
         )
-
-        print(llm_response)
 
         logger.log(level="debug", func_name="RagChainService.run_rag_chain",
                    message=f"Executed RAG chain. \nDocuments: {len(llm_response.related_documents)} "

@@ -108,6 +108,27 @@ async def delete_document(
         )
 
 
+@router.delete("/api/v1/documents/{userId}")
+async def delete_document(
+        userId: str,
+        documentId: Optional[str] = None,
+        vector_store: VectorStore = Depends(get_vector_store),
+):
+    request_id = str(uuid.uuid4())
+    request_id_var.set(request_id)
+
+    try:
+        if not isinstance(documentId, str):
+            documentId = None
+
+        response = vector_store.delete_chunks(user_id=userId, document_id=documentId)
+        return JSONResponse(content=response.dict())
+    except Exception as e:
+        raise HTTPInternalServerError(
+            error=str(e)
+        )
+
+
 @router.get("/api/v1/documents/{userId}")
 async def get_documents(
         userId: str,

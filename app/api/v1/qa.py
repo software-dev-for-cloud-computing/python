@@ -66,6 +66,13 @@ async def qa_request(
         prompts: RagPrompts = Depends(get_prompts),
 ):
     logger.log(level="debug", func_name="POST /qa", message="QA request received")
+    logger.log(level="debug", func_name="POST /qa", message=f"Query: {query}")
+    logger.log(level="debug", func_name="POST /qa", message=f"Owner ID: {owner_id}")
+    logger.log(level="debug", func_name="POST /qa", message=f"Conversation ID: {conversation_id}")
+    logger.log(level="debug", func_name="POST /qa", message=f"Document ID: {document_id}")
+
+    if document_id == "undefined":
+        document_id = None
     # try:
     chat_history = ChatHistory(messages=chat_history)
 

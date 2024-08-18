@@ -102,17 +102,24 @@ class VectorStoreQdrant(VectorStore):
 
     @logger.log_decorator(level="debug", message="Delete chunks from one doucment from the collection")
     def delete_chunks(self, document_id: str, user_id: str):
+
+        conditions = [models.FieldCondition(
+            key="metadata.owner_id",
+            match=models.MatchValue(value=user_id)
+        )]
+
+        if document_id is not None:
+            conditions.append(models.FieldCondition(
+                key="metadata.document_id",
+                match=models.MatchValue(value=document_id)
+            ))
+
         try:
             return self.client.delete(
                 collection_name=COLLECTION_NAME,
                 points_selector=models.FilterSelector(
                     filter=models.Filter(
-                        must=[
-                            models.FieldCondition(
-                                key="metadata.document_id",
-                                match=models.MatchValue(value=document_id),
-                            ),
-                        ],
+                        must=conditions,
                     )
                 ),
             )

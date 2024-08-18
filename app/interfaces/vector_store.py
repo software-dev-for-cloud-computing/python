@@ -27,7 +27,7 @@ class VectorStore(ABC):
         pass
 
     @abstractmethod
-    def delete_chunks(self, user_id: str, document_id: str):
+    def delete_chunks(self, user_id: str, document_id: Optional[str] = None):
         pass
 
     @abstractmethod
