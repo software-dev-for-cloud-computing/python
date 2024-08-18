@@ -1,5 +1,6 @@
 import os
 import tempfile
+import time
 from aiofile import AIOFile
 from langchain_community.document_loaders import PyMuPDFLoader
 
@@ -13,13 +14,18 @@ class PDFReaderService(PDFReader):
     @staticmethod
     @logger.log_decorator(level="debug", message="Reading in PDF")
     async def read_pdf(file):
-        temp_file = tempfile.NamedTemporaryFile(delete=False)
-        try:
-            async with AIOFile(temp_file.name, 'wb') as afp:
-                await afp.write(file)
-                await afp.fsync()
-            loader = PyMuPDFLoader(file_path=temp_file.name)
-            data = loader.load()
-        finally:
-            os.unlink(temp_file.name)
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            temp_filename = temp_file.name
+            try:
+                async with AIOFile(temp_filename, 'wb') as afp:
+                    await afp.write(file)
+                    await afp.fsync()
+
+                loader = PyMuPDFLoader(file_path=temp_filename)
+                data = loader.load()
+
+            finally:
+                time.sleep(0.1)  # Optional: Verzögerung für Sicherheit
+                os.unlink(temp_filename)
+
         return data
