@@ -7,12 +7,6 @@ WORKDIR /app
 # Add the current directory contents into the container at /app
 ADD . /app
 
-# Accept the API_KEY argument during build
-ARG API_KEY
-
-# Create or overwrite .env file with the API_KEY
-RUN echo "OPENAI_API_KEY=$API_KEY" > .env
-
 # Update the package lists and install build-essential
 RUN apt-get update && apt-get install -y build-essential
 
