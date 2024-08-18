@@ -20,12 +20,15 @@ class PDFReaderService(PDFReader):
                 await afp.write(file)
                 await afp.fsync()
 
-            # Lade die Datei in den Speicher
+            # Datei einlesen
             loader = PyMuPDFLoader(file_path=temp_filename)
             data = loader.load()
 
+            # Explicit release resources (if loader supports it)
+            del loader
+
         finally:
-            # Warten, bis die Datei nicht mehr verwendet wird
+            # Verzögerung hinzufügen, um sicherzustellen, dass alle Ressourcen freigegeben sind
             time.sleep(0.1)
             os.unlink(temp_filename)
 
