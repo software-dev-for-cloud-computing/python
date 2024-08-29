@@ -5,18 +5,18 @@ from typing import Any, Optional
 from langchain_core.runnables import Runnable
 from pydantic import PositiveInt
 
-from app.interfaces.llm_model import LlmModel
-from app.interfaces.prompts import RagPrompts
-from app.interfaces.retriever import Retriever
-from app.models.objects.llm_message_model import LLMResponse
+from app.core.external_services.llm.llm_port import LlmModel
+from app.core.domain.qa.qa_models import QALLMResponse
+from app.core.domain.qa.qa_prompts_interface import QAPromptsInterface
+from app.core.domain.retriever.retriever import Retriever
 
 
-class RagChains(ABC):
+class QAChains(ABC):
     @abstractmethod
     def get_vector_store_retriever_chain(self, user_id: str,
                                          llm: LlmModel,
                                          retriever: Retriever,
-                                         prompt: RagPrompts,
+                                         prompt: QAPromptsInterface,
                                          document_id: Optional[str] = None,
                                          conversation_id: Optional[str] = None,
                                          k: PositiveInt = int(os.getenv("MAX_K_RESULTS"))
@@ -24,18 +24,18 @@ class RagChains(ABC):
         pass
 
     @abstractmethod
-    def get_llm_chain(self, llm: LlmModel, prompt: RagPrompts) -> Runnable:
+    def get_llm_chain(self, llm: LlmModel, prompt: QAPromptsInterface) -> Runnable:
         pass
 
     @abstractmethod
-    def get_rag_chain(self, retriever_chain: Runnable, llm_chain: Runnable) -> Runnable:
+    def get_qa_chain(self, retriever_chain: Runnable, llm_chain: Runnable) -> Runnable:
         pass
 
     @abstractmethod
-    def run_rag_chain(self,
-                      rag_chain: Runnable,
+    def run_qa_chain(self,
+                      qa_chain: Runnable,
                       query: str,
                       chat_history: Any,
                       user_id: str,
-                      ) -> LLMResponse:
+                      ) -> QALLMResponse:
         pass

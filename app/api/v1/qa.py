@@ -1,25 +1,23 @@
 import os
 from typing import Optional, List
 
-from fastapi import APIRouter, Depends, HTTPException, Header, Query
-from app.business_logic.qa_process import QAProcess
-from app.interfaces.embedding_model import EmbeddingModel
-from app.interfaces.llm_model import LlmModel
-from app.interfaces.prompts import RagPrompts
-from app.interfaces.retriever import Retriever
-from app.interfaces.vector_store import VectorStore
-from app.models.dto.documents import UploadDocumentRequest
-from app.models.dto.interfaces import InternalServerErrorResponse
-from app.models.dto.qa import QAResponse, QARequest
+from fastapi import APIRouter, Depends, Header, Query
+
+from app.core.external_services.database.vector_store.qdrant_vector_adapter import VectorStoreQdrant
+from app.core.external_services.embedding.openai_embedding_adapter import OpenAIEmbeddingModel
+from app.core.external_services.llm.openai_llm_adapter import OpenAILLMModel
+from app.core.services.qa_process import QAProcess
+from app.core.domain.qa.qa_models import QAHistoryMessage
+from app.core.domain.qa.qa_prompts_interface import QAPromptsInterface
+from app.core.domain.qa.qa_prompts_service import QAPromptsService
+from app.core.external_services.embedding.embedding_port import EmbeddingModel
+from app.core.external_services.llm.llm_port import LlmModel
+from app.core.domain.retriever.retriever import Retriever
+from app.core.external_services.database.vector_store.vector_store_port import VectorStore
+from app.models.dto.qa import QAResponse
 from app.models.objects.chat_history_model import ChatHistory
-from app.models.objects.llm_message_model import QAHistoryMessage
-from app.services.llm_service import OpenAILLMModel
-from app.services.qa_prompts_service import RagPromptsService
-from app.services.retriever_service import QdrantRetriever
-from app.services.embedding_service import OpenAIEmbeddingModel
-from app.services.vector_store_service import VectorStoreQdrant
-from app.exceptions.http_exceptions import HTTPInternalServerError
-from app.utils.logger import Logger
+from app.core.domain.retriever.retriever_service import QdrantRetriever
+from app.core.utils.logger import Logger
 
 router = APIRouter()
 
@@ -47,8 +45,8 @@ def get_retriever(embedding_model: EmbeddingModel = Depends(get_embedding_model)
     return QdrantRetriever(vector_store, embedding_model)
 
 
-def get_prompts() -> RagPrompts:
-    return RagPromptsService()
+def get_prompts() -> QAPromptsInterface:
+    return QAPromptsService()
 
 
 @router.post("/qa", response_model=QAResponse)
@@ -60,12 +58,17 @@ async def qa_request(
         conversation_id: str = Query(..., alias="conversationId"),
         document_id: Optional[str] = Query(None, alias="documentId"),
         llm: LlmModel = Depends(get_llm),
-        embedding_model: EmbeddingModel = Depends(get_embedding_model),
-        vector_store: VectorStore = Depends(get_vector_store),
         retriever: Retriever = Depends(get_retriever),
-        prompts: RagPrompts = Depends(get_prompts),
+        prompts: QAPromptsInterface = Depends(get_prompts),
 ):
     logger.log(level="debug", func_name="POST /qa", message="QA request received")
+    logger.log(level="debug", func_name="POST /qa", message=f"Query: {query}")
+    logger.log(level="debug", func_name="POST /qa", message=f"Owner ID: {owner_id}")
+    logger.log(level="debug", func_name="POST /qa", message=f"Conversation ID: {conversation_id}")
+    logger.log(level="debug", func_name="POST /qa", message=f"Document ID: {document_id}")
+
+    if document_id == "undefined":
+        document_id = None
     # try:
     chat_history = ChatHistory(messages=chat_history)
 
@@ -77,8 +80,8 @@ async def qa_request(
         query=query,
         document_id=document_id,
         conversation_id=conversation_id,
-        chat_history=chat_history,
-        api_key=api_key,
+        chat_history=chat_history
+        # api_key=api_key,
     )
 
     return response

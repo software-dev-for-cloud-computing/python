@@ -3,7 +3,7 @@ from typing import Literal, List
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-from app.models.objects.chunk_model import ChunkModel
+from app.core.domain.chunks.chunk_model import ChunkModel
 
 load_dotenv()
 
@@ -17,7 +17,7 @@ class QAHistoryMessage(BaseModel):
     timestamp: str
 
 
-class LLMResponse(BaseModel):
+class QALLMResponse(BaseModel):
     question: str
     answer: str
     related_documents: List[ChunkModel]

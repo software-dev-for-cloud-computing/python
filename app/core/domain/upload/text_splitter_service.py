@@ -1,10 +1,9 @@
 from typing import List
 from langchain_text_splitters import SpacyTextSplitter
 from tqdm import tqdm
-
-from app.interfaces.text_splitter import TextSplitter
-from app.models.objects.chunk_model import ChunkModel, ChunkMetadata
-from app.utils.logger import Logger
+from app.core.domain.chunks.chunk_model import ChunkModel, ChunkMetadata
+from app.core.domain.upload.text_splitter_interface import TextSplitter
+from app.core.utils.logger import Logger
 
 logger = Logger('Logger')
 

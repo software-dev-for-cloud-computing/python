@@ -1,5 +1,6 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from app.interfaces.prompts import RagPrompts
+
+from app.core.domain.qa.qa_prompts_interface import QAPromptsInterface
 
 VECTOR_STORE_RETRIEVER_PROMPT = """Given a chat history and the latest user question which might 
         reference context in the chat history, formulate a standalone question which can be understood without the chat 
@@ -14,7 +15,7 @@ LLM_PROMPT_WITH_CONTEXT = """You are a helpful assistant for question-answering 
                    {context}"""
 
 
-class RagPromptsService(RagPrompts):
+class QAPromptsService(QAPromptsInterface):
     def __init__(self):
         self._history_aware_prompt = None
         self._llm_prompt_with_context = None

@@ -1,63 +1,47 @@
 import os
-from typing import List, Collection, Optional
+from typing import List, Optional
 
-from dotenv import load_dotenv
 from fastapi.exceptions import RequestValidationError, HTTPException
 from langchain_core.documents import Document
-from langchain_qdrant import Qdrant, QdrantVectorStore
-from qdrant_client import QdrantClient, models
-from qdrant_client.http.models import CollectionInfo
-
-from app.interfaces.embedding_model import EmbeddingModel
-from app.interfaces.vector_store import VectorStore
-from app.models.dto.search import SearchResponse, DocumentWithScore
-from app.models.objects.chunk_model import ChunkModel, ChunkMetadata
-from app.utils.logger import Logger
-
-logger = Logger('app_logger')
+from langchain_qdrant import QdrantVectorStore
+from qdrant_client import models
+from app.core.domain.chunks.chunk_interface import ChunkInterface
+from app.core.external_services.embedding.embedding_port import EmbeddingModel
+from app.core.external_services.database.vector_store.vector_store_port import VectorStore
+from app.models.dto.search import DocumentWithScore
+from app.core.domain.chunks.chunk_model import ChunkModel, ChunkMetadata
+from dotenv import load_dotenv
+from app.core.utils.logger import Logger
 
 load_dotenv()
+
+logger = Logger('Logger')
 
 COLLECTION_NAME = os.getenv("VECTOR_STORE_COLLECTION")
 MAX_K_RESULTS = os.getenv("MAX_K_RESULTS")
 
 
-class VectorStoreQdrant(VectorStore):
+class ChunkRepository(ChunkInterface):
 
-    def __init__(self):
-        self.collection_connection: Qdrant | None = None
-        self.client = QdrantClient(url=os.getenv("VECTOR_STORE_URL"))
-
-        # Initialize the collection if it does not exist
-        if self.collection_exists(COLLECTION_NAME) is False:
-            logger.log(level="warning", message="Creating collection")
-            self.create_collection(collection_name=COLLECTION_NAME)
-
-    def collection_exists(self, collection_name: str) -> bool:
-        return self.client.collection_exists(collection_name=collection_name)
-
-    def get_connection(self, embedding_model: EmbeddingModel) -> Qdrant:
-        if self.collection_connection is None:
-            self.collection_connection = Qdrant(client=self.client,
-                                                collection_name=COLLECTION_NAME,
-                                                embeddings=embedding_model.get_model(),
-                                                metadata_payload_key="metadata",
-                                                )
-
-        return self.collection_connection
+    def __init__(self, vector_Store: VectorStore):
+        self.vector_Store = vector_Store
+        self.client = vector_Store.get_client()
 
     @logger.log_decorator(level="debug", message="Add chunks to collection")
-    def add_chunks(self, chunks: List[ChunkModel], embedding_model: EmbeddingModel) -> None:
-
+    def add_chunks(self, chunks: List[ChunkModel], embedding_model: EmbeddingModel) -> bool:
         documents = [Document(page_content=chunk.content, metadata=chunk.metadata) for chunk in chunks]
 
-        QdrantVectorStore.from_documents(
-            documents=documents,
-            embedding=embedding_model.get_model(),
-            url=os.getenv("VECTOR_STORE_URL"),
-            collection_name=os.getenv("VECTOR_STORE_COLLECTION"),
-            metadata_payload_key="metadata",
-        )
+        try:
+            QdrantVectorStore.from_documents(
+                documents=documents,
+                embedding=embedding_model.get_model(),
+                url=os.getenv("VECTOR_STORE_URL"),
+                collection_name=os.getenv("VECTOR_STORE_COLLECTION"),
+                metadata_payload_key="metadata",
+            )
+            return True
+        except:
+            return False
 
     @logger.log_decorator(level="debug", message="Get chunks to collection")
     def get_chunks(self, user_id: str, document_id: str):  # -> List[ChunkModel]:
@@ -102,17 +86,23 @@ class VectorStoreQdrant(VectorStore):
 
     @logger.log_decorator(level="debug", message="Delete chunks from one doucment from the collection")
     def delete_chunks(self, document_id: str, user_id: str):
+        conditions = [models.FieldCondition(
+            key="metadata.owner_id",
+            match=models.MatchValue(value=user_id)
+        )]
+
+        if document_id is not None:
+            conditions.append(models.FieldCondition(
+                key="metadata.document_id",
+                match=models.MatchValue(value=document_id)
+            ))
+
         try:
             return self.client.delete(
                 collection_name=COLLECTION_NAME,
                 points_selector=models.FilterSelector(
                     filter=models.Filter(
-                        must=[
-                            models.FieldCondition(
-                                key="metadata.document_id",
-                                match=models.MatchValue(value=document_id),
-                            ),
-                        ],
+                        must=conditions,
                     )
                 ),
             )
@@ -123,9 +113,11 @@ class VectorStoreQdrant(VectorStore):
             raise HTTPException(status_code=500, detail=str(e))
 
     @logger.log_decorator(level="debug", message="Search for chunks")
-    def search_chunks(self, embedding_model: EmbeddingModel, query: str, user_id: str, document_id: Optional[str] = None, k: int = MAX_K_RESULTS):
+    def search_chunks(self, embedding_model: EmbeddingModel, query: str, user_id: str,
+                      document_id: Optional[str] = None,
+                      k: int = MAX_K_RESULTS):
         try:
-            connection = self.get_connection(embedding_model)
+            connection = self.vector_Store.get_connection(embedding_model)
 
             if document_id is None:
                 filter = {"owner_id": user_id}
@@ -146,7 +138,8 @@ class VectorStoreQdrant(VectorStore):
                         document_id=document_data.metadata["document_id"],
                         owner_id=document_data.metadata["owner_id"],
                         page_number=document_data.metadata["page_number"],
-                        on_page_index=document_data.metadata["on_page_index"]
+                        on_page_index=document_data.metadata["on_page_index"],
+                        conversation_id=document_data.metadata["conversation_id"]
                     ),
                     score=score
                 )
@@ -156,24 +149,3 @@ class VectorStoreQdrant(VectorStore):
         except Exception as e:
             print(e)
             raise HTTPException(status_code=500, detail=str(e))
-
-    def get_collection(self, collection_name: str) -> CollectionInfo | None:
-        if self.client.collection_exists(collection_name=collection_name):
-            return self.client.get_collection(collection_name=collection_name)
-        return None
-
-    def get_collections(self):
-        return self.client.get_collections()
-
-    @logger.log_decorator(level="debug", message="Create new collection")
-    def create_collection(self, collection_name: str):
-        if not self.collection_exists(collection_name):
-            self.client.create_collection(
-                collection_name=collection_name,
-                vectors_config=models.VectorParams(size=1536, distance=models.Distance.COSINE, on_disk=True),
-                hnsw_config=models.HnswConfigDiff(m=64, ef_construct=512, on_disk=True),
-            )
-
-    @logger.log_decorator(level="debug", message="Delete collection")
-    def delete_collection(self, collection_name: str):
-        self.client.delete_collection(collection_name=collection_name)

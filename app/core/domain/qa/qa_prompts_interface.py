@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from langchain_core.prompts import ChatPromptTemplate
 
 
-class RagPrompts(ABC):
+class QAPromptsInterface(ABC):
 
     @abstractmethod
     def get_history_aware_prompt_for_vector_store_retriever(self) -> ChatPromptTemplate:

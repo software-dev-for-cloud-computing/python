@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field, validator
-from app.interfaces.llm_model import LlmModel
+from app.core.external_services.llm.llm_port import LlmModel
 import os
 
 load_dotenv()

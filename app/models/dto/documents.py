@@ -1,9 +1,9 @@
-from typing import List, Any
+from typing import List
 
 from pydantic import Field, BaseModel
 
-from app.models.dto.interfaces import NoContentResponse, SuccessResponse, InternalServerErrorResponse
-from app.models.objects.chunk_model import ChunkModel
+from app.models.dto.interfaces import SuccessResponse
+from app.core.domain.chunks.chunk_model import ChunkModel
 
 
 class UploadDocumentRequest(BaseModel):

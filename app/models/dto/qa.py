@@ -1,9 +1,9 @@
-from typing import List, Optional
+from typing import List
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from app.models.dto.interfaces import SuccessResponse
-from app.models.objects.chunk_model import ChunkModel
+from app.core.domain.chunks.chunk_model import ChunkModel
 
 from typing import Optional
 from fastapi import Query

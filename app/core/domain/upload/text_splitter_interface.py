@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List
 
-from app.models.objects.chunk_model import ChunkModel
+from app.core.domain.chunks.chunk_model import ChunkModel
 
 
 class TextSplitter(ABC):
