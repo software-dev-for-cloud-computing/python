@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import List
-from app.models.objects.llm_message_model import QAHistoryMessage
 from langchain_community.chat_message_histories import ChatMessageHistory
+from app.core.domain.qa.qa_models import QAHistoryMessage
 
 
 class ChatHistory(BaseModel):

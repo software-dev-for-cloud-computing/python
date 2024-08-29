@@ -2,9 +2,9 @@ import os
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends
 from app.exceptions.http_exceptions import HTTPInternalServerError
-from app.interfaces.vector_store import VectorStore
-from app.services.vector_store_service import VectorStoreQdrant
-from app.utils.logger import Logger
+from app.core.external_services.database.vector_store.vector_store_port import VectorStore
+from app.core.external_services.database.vector_store.qdrant_vector_adapter import VectorStoreQdrant
+from app.core.utils.logger import Logger
 
 router = APIRouter()
 

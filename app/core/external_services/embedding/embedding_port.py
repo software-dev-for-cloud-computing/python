@@ -1,21 +1,30 @@
 import os
 from abc import ABC, abstractmethod
-from typing import List, Type, Any
+from typing import List, Any
 
 from dotenv import load_dotenv
 from pydantic import PositiveInt, Field
 
-from app.models.objects.chunk_model import ChunkModel
+from app.core.domain.chunks.chunk_model import ChunkModel
 
 load_dotenv()
-DEFAULT_MODEL = os.getenv("EMBEDDING_MODEL")
+
+
+#DEFAULT_MODEL = os.getenv("EMBEDDING_MODEL")
 
 
 class EmbeddingModel(ABC):
     dimensions: PositiveInt = Field(1024, ge=124, le=4096)
-    model_name: str = DEFAULT_MODEL
+    model_name: str  # = DEFAULT_MODEL
     api_key: str = Field(min_length=30)
     tokenizer: Any
+
+    @abstractmethod
+    def __init__(self,
+                 api_key: str,
+                 model_name: str,
+                 dimensions: PositiveInt):
+        pass
 
     @abstractmethod
     def get_model(self):
@@ -36,4 +45,3 @@ class EmbeddingModel(ABC):
     @abstractmethod
     def estimate_tokens_chunks(self, chunks: List[ChunkModel]) -> int:
         pass
-

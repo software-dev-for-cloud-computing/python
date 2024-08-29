@@ -1,14 +1,15 @@
 from fastapi import UploadFile
 
-from app.interfaces.embedding_model import EmbeddingModel
-from app.interfaces.pdf_reader import PDFReader
-from app.interfaces.text_splitter import TextSplitter
-from app.interfaces.vector_store import VectorStore
+from app.core.domain.chunks.chunk_repository import ChunkRepository
+from app.core.domain.upload.pdf_reader_interface import PDFReader
+from app.core.domain.upload.text_splitter_interface import TextSplitter
+from app.exceptions.http_exceptions import HTTPInternalServerError
+from app.core.external_services.embedding.embedding_port import EmbeddingModel
 from app.models.dto.documents import UploadDocumentResponse
 from app.models.dto.documents import UploadDocumentRequest
 from app.models.dto.interfaces import InternalServerErrorResponse
 from app.models.objects.pdf_upload_model import PDFUploadModel
-from app.utils.logger import Logger
+from app.core.utils.logger import Logger
 
 logger = Logger(name="Logger")
 
@@ -22,7 +23,7 @@ class UploadProcess:
             pdf_reader: PDFReader,
             text_splitter: TextSplitter,
             embedding_model: EmbeddingModel,
-            vector_store: VectorStore,
+            chunk_repository: ChunkRepository,
             document_id: str,
             owner_id: str
     ) -> UploadDocumentResponse | InternalServerErrorResponse:
@@ -50,9 +51,12 @@ class UploadProcess:
         # Save to Qdrant
         logger.log(level="debug", func_name="upload_process",
                    message="Add the newly created chunks to the vectorstore")
-        chunks_added = vector_store.add_chunks(chunks=chunks, embedding_model=embedding_model)
+        chunks_added = chunk_repository.add_chunks(chunks=chunks, embedding_model=embedding_model)
 
-        print(chunks_added)
+        # Check if the chunks were added successfully
+        if not chunks_added:
+            e = Exception("Internal server error: Could not add chunks to the vector store")
+            raise HTTPInternalServerError(error=str(e))
 
         # Return response
         return UploadDocumentResponse(

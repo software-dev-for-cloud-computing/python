@@ -1,7 +1,6 @@
-from typing import List
 from pydantic import BaseModel, PositiveInt, Field, field_validator
 from app.exceptions.exceptions import InvalidOwnerIdError, InvalidDocumentIdError, InvalidConversationIdError
-from app.exceptions.chunk_exceptions import InvalidContentError, InvalidPageNumberError
+from app.core.domain.chunks.chunk_exceptions import InvalidContentError, InvalidPageNumberError
 
 
 class ChunkMetadata(BaseModel):

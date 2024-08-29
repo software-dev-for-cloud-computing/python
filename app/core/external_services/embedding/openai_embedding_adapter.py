@@ -6,9 +6,9 @@ from dotenv import load_dotenv
 from langchain_openai.embeddings import OpenAIEmbeddings
 from pydantic import PositiveInt
 
-from app.interfaces.embedding_model import EmbeddingModel
-from app.models.objects.chunk_model import ChunkModel
-from app.utils.logger import Logger
+from app.core.external_services.embedding.embedding_port import EmbeddingModel
+from app.core.domain.chunks.chunk_model import ChunkModel
+from app.core.utils.logger import Logger
 
 logger = Logger('Logger')
 
